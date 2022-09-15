@@ -23,8 +23,11 @@ L1_losses = AverageMeter()
 test_iou = dict()
 
 for i in range (0, 18):
-    fake_B = np.load('J:/Program/vox2vox-master/vox2vox-master/logs/220829_3_log/epoch_200_fake_B_' + str(i).zfill(2) + '.npy')
-    real_B = np.load('J:/Program/vox2vox-master/vox2vox-master/logs/220829_3_log/epoch_200_real_B_' + str(i).zfill(2) + '.npy')
+    fake_B = np.load('J:/Program/vox2vox-master/vox2vox-master/logs/220915_5_log_loss_GAN_prop_normalize_add_mid_layer_4_2048/epoch_200_fake_B_' + str(i).zfill(2) + '.npy')
+    real_B = np.load('J:/Program/vox2vox-master/vox2vox-master/logs/220915_5_log_loss_GAN_prop_normalize_add_mid_layer_4_2048/epoch_200_real_B_' + str(i).zfill(2) + '.npy')
+    real_B_max = real_B.max()
+    real_B_min = real_B.min()
+    real_B = (real_B - real_B_min) / (real_B_max - real_B_min)
 
     fake_B_tensor = torch.Tensor(fake_B)
     real_B_tensor = torch.Tensor(real_B)

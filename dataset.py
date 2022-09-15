@@ -10,11 +10,11 @@ from datetime import datetime as dt
 import binvox_rw
 
 class CTDataset(Dataset):
-    def __init__(self, datapath):
+    def __init__(self, datapath, transforms_):
         self.datapath = datapath
         self.datapaths_img = glob.glob(self.datapath + 'image/*')
         self.datapaths_vol = glob.glob(self.datapath + 'volume/*')
-        # self.transforms = transforms_
+        self.transforms = transforms_
 
     def __len__(self):
         return len(glob.glob(self.datapath + 'image/*'))
@@ -42,11 +42,9 @@ class CTDataset(Dataset):
         with open(volume_path, 'rb') as f:
             volume = binvox_rw.read_as_3d_array(f)
 
-        '''
         if self.transforms:
             # image, mask = self.transforms(image), self.transforms(mask)
-            image = self.transforms(image)
-            '''
+            rendering_images = self.transforms(rendering_images)
 
         # return {"A": image, "B": mask}
         return {"A": rendering_images, "B": volume.data}
