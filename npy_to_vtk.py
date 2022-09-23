@@ -2,7 +2,7 @@ import vtk
 import numpy as np
 from vtk.util import numpy_support
 
-data = np.load('J:/Program/vox2vox-master/vox2vox-master/logs/220915_5_log_loss_GAN_prop_normalize_add_mid_layer_4_2048/epoch_200_fake_B_01.npy')
+data = np.load('J:/Program/vox2vox-master/vox2vox-master/logs/220910_5_log_loss_GAN_vox2vox_normalize/epoch_200_fake_B_14.npy')
 '''
 data_max = data.max()
 data_min = data.min()
@@ -21,6 +21,6 @@ imdata.SetOrigin([0, 0, 0])
 imdata.GetPointData().SetScalars(depthArray)
 
 writer = vtk.vtkMetaImageWriter()
-writer.SetFileName('J:/Program/vox2vox-master/vox2vox-master/logs/220915_5_log_loss_GAN_prop_normalize_add_mid_layer_4_2048/epoch_200_fake_B_01.mha')
+writer.SetFileName('J:/Program/vox2vox-master/vox2vox-master/logs/220910_5_log_loss_GAN_vox2vox_normalize/epoch_200_fake_B_14.mha')
 writer.SetInputData(imdata)
 writer.Write()

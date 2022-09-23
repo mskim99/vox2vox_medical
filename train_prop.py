@@ -20,7 +20,7 @@ from dataset import CTDataset
 import transforms
 
 from dice_loss import diceloss
-import loss_function
+import evaluation_factor as ef
 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -34,11 +34,11 @@ def train():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--epoch", type=int, default=0, help="epoch to start training from")
-    parser.add_argument("--n_epochs", type=int, default=410, help="number of epochs of training")
+    parser.add_argument("--n_epochs", type=int, default=210, help="number of epochs of training")
     parser.add_argument("--dataset_name", type=str, default="KISTI_volume", help="name of the dataset")
     parser.add_argument("--batch_size", type=int, default=1, help="size of the batches")
-    parser.add_argument("--glr", type=float, default=2e-4, help="adam: generator learning rate") # Default : 2e-4
-    parser.add_argument("--dlr", type=float, default=2e-4, help="adam: discriminator learning rate") # Default : 2e-4
+    parser.add_argument("--glr", type=float, default=2e-5, help="adam: generator learning rate") # Default : 2e-4
+    parser.add_argument("--dlr", type=float, default=2e-5, help="adam: discriminator learning rate") # Default : 2e-4
     parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
     parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
     parser.add_argument("--decay_epoch", type=int, default=100, help="epoch from which to start lr decay")
@@ -97,6 +97,7 @@ def train():
     optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=opt.dlr, betas=(opt.b1, opt.b2))
 
     # Configure dataloaders
+    '''
     train_transforms = transforms.Compose([
         transforms.RandomCrop([128, 128], [128, 128]),
         transforms.CenterCrop([128, 128], [128, 128]),
@@ -114,16 +115,17 @@ def train():
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
         transforms.ToTensor(),
     ])
+    '''
 
     dataloader = DataLoader(
-        CTDataset("./data/orig/train/", train_transforms),
+        CTDataset("./data/orig/train/", None),
         batch_size=opt.batch_size,
         shuffle=True,
         num_workers=opt.n_cpu,
     )
 
     val_dataloader = DataLoader(
-        CTDataset("./data/orig/test/", val_transforms),
+        CTDataset("./data/orig/test/", None),
         batch_size=1,
         shuffle=True,
         num_workers=1,
@@ -152,10 +154,25 @@ def train():
             loss_voxel = criterion_voxelwise(fake_B, real_B)
             loss_l1 = L1_loss(fake_B, real_B)
 
+            loss_uqi = 1. - ef.uqi_volume(fake_B.cpu().detach().numpy(), real_B.cpu().detach().numpy(), normalize=True)
+
+            # IoU per sample
+            sample_iou = []
+            for th in [.2, .3, .4, .5]:
+                # for th in [0.3]:
+                _volume = torch.ge(fake_B, th).float()
+                _gt_volume = torch.ge(real_B, th).float()
+                intersection = torch.sum(torch.ge(_volume.mul(_gt_volume), 1)).float()
+                union = torch.sum(torch.ge(_volume.add(_gt_volume), 1)).float()
+                sample_iou.append((intersection / union).item())
+
+            # sample_iou = np.multiply(sample_iou, weights)
+            iou_loss = sum(sample_iou) / len(sample_iou)
+            iou_loss = 1. - iou_loss
 
             # Print log
             sys.stdout.write(
-                "\r[Test Epoch %d/%d] [Batch %d/%d] [voxel: %f] [L1: %f]"
+                "\r[Test Epoch %d/%d] [Batch %d/%d] [voxel: %f] [L1: %f] [iou: %f] [sim: %f]"
                 % (
                     epoch,
                     opt.n_epochs,
@@ -163,6 +180,8 @@ def train():
                     len(val_dataloader),
                     loss_voxel.item(),
                     loss_l1.item(),
+                    iou_loss,
+                    loss_uqi.item()
                 )
             )
 
@@ -246,7 +265,7 @@ def train():
             # Voxel-wise loss
             loss_voxel = criterion_voxelwise(fake_B, real_B)
             loss_L1 = L1_loss(fake_B, real_B)
-            loss_SSIM = loss_function.ssim_loss_volume(fake_B, real_B)
+            loss_uqi = 1. - ef.uqi_volume(fake_B.cpu().detach().numpy(), real_B.cpu().detach().numpy(), normalize=True)
 
             # IoU per sample
             sample_iou = []
@@ -260,10 +279,19 @@ def train():
 
             # sample_iou = np.multiply(sample_iou, weights)
             iou_loss = sum(sample_iou) / len(sample_iou)
-            iou_loss = 0.5 - iou_loss
+            iou_loss = 1. - iou_loss
+
+            dice_score = 0.0
+            thres_list = np.arange(0.3, 1.0, 0.01)
+            for thres in thres_list:
+                dice_score_part = ef.dice_factor2(fake_B, real_B, thres)
+                dice_score += dice_score_part
+            dice_score = dice_score / 70.
+            loss_dice = 1. - dice_score
 
             # Total loss
-            loss_G = loss_GAN + 33. * loss_L1 + 33. * iou_loss + 33. * loss_SSIM
+            loss_G = loss_GAN + 33. * loss_L1 + 33. * iou_loss + 33. * loss_uqi
+            # loss_G = loss_GAN + 33. * loss_L1 + 33. * iou_loss
             # + 100. * loss_L1
 
             loss_G.backward()
@@ -285,7 +313,7 @@ def train():
 
             # Print log
             sys.stdout.write(
-                "\r[Epoch %d/%d] [Batch %d/%d] [D loss: %f, D accuracy: %f, D update: %s] [G loss: %f, voxel: %f, adv: %f, L1: %f] ETA: %s"
+                "\r[Epoch %d/%d] [Batch %d/%d] [D loss: %f, D accuracy: %f, D update: %s] [G loss: %f, voxel: %f, adv: %f, L1: %f, iou: %f, sim: %f] ETA: %s"
                 % (
                     epoch,
                     opt.n_epochs,
@@ -298,6 +326,8 @@ def train():
                     loss_voxel.item(),
                     loss_GAN.item(),
                     loss_L1.item(),
+                    iou_loss,
+                    loss_uqi.item(),
                     time_left,
                 )
             )
@@ -322,5 +352,5 @@ if __name__ == '__main__':
 
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = '1'
+    os.environ["CUDA_VISIBLE_DEVICES"] = '2'
     train()
