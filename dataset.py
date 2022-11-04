@@ -31,8 +31,12 @@ class CTDataset(Dataset):
                 print('[FATAL] %s It seems that there is something wrong with the image file %s' %
                         (dt.now(), image_path))
                 sys.exit(2)
+            if self.transforms:
+                # image, mask = self.transforms(image), self.transforms(mask)
+                rendering_image = self.transforms(rendering_image)
 
             rendering_images.append(rendering_image)
+
         rendering_images = np.asarray(rendering_images)
         rendering_images = rendering_images[:, :, :, 0]
         rendering_images = resize(rendering_images, (128, 128, 128))
@@ -42,9 +46,6 @@ class CTDataset(Dataset):
         with open(volume_path, 'rb') as f:
             volume = binvox_rw.read_as_3d_array(f)
 
-        if self.transforms:
-            # image, mask = self.transforms(image), self.transforms(mask)
-            rendering_images = self.transforms(rendering_images)
 
         # return {"A": image, "B": mask}
         return {"A": rendering_images, "B": volume.data}

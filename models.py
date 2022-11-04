@@ -238,11 +238,12 @@ class GeneratorUNet(nn.Module):
         self.mid1 = UNetMid(1024, 512, dropout=0.2)
         self.mid2 = UNetMid(1024, 512, dropout=0.2)
         self.mid3 = UNetMid(1024, 512, dropout=0.2)
-        '''
+
         self.mid3_1 = UNetMid(1024, 512, dropout=0.2)
         self.mid3_2 = UNetMid(1024, 512, dropout=0.2)
         self.mid3_3 = UNetMid(1024, 512, dropout=0.2)
         self.mid3_4 = UNetMid(1024, 512, dropout=0.2)
+        '''
         self.mid3_5 = UNetMid(1024, 512, dropout=0.2)
         self.mid3_6 = UNetMid(1024, 512, dropout=0.2)
         '''
@@ -252,7 +253,7 @@ class GeneratorUNet(nn.Module):
         self.up3 = UNetUp(256, 64)
         # self.us =   nn.Upsample(scale_factor=2)
 
-        self.lffb = LFFB(128)
+        self.lffb = LFFB(64)
 
         self.final = nn.Sequential(
             # nn.Conv3d(128, out_channels, 4, padding=1),
@@ -265,9 +266,11 @@ class GeneratorUNet(nn.Module):
         # U-Net generator with skip connections from encoder to decoder
         d1 = self.down1(x)
         # print(d1.shape)
-        d1_l = self.msrb(d1)
+        d1_l = self.lffb(d1)
+        # d1_m = self.msrb(d1_l)
         # print(d1_l.shape)
         d2 = self.down2(d1_l)
+        # d2 = self.down2(d1)
         # print(d2.shape)
         d3 = self.down3(d2)
         # print(d3.shape)
@@ -279,10 +282,10 @@ class GeneratorUNet(nn.Module):
         # print(m2.shape)
         m3 = self.mid3(m2, m2)
         # print(m3.shape)
-        # m3_1 = self.mid3_1(m3, m3)
-        # m3_2 = self.mid3_2(m3_1, m3_1)
-        # m3_3 = self.mid3_3(m3_2, m3_2)
-        # m3_4 = self.mid3_4(m3_3, m3_3)
+        m3_1 = self.mid3_1(m3, m3)
+        m3_2 = self.mid3_2(m3_1, m3_1)
+        m3_3 = self.mid3_3(m3_2, m3_2)
+        m3_4 = self.mid3_4(m3_3, m3_3)
         # m3_5 = self.mid3_5(m3_4, m3_4)
         # m3_6 = self.mid3_6(m3_5, m3_5)
         # m4 = self.mid4(m3_4, m3_4)
@@ -293,9 +296,7 @@ class GeneratorUNet(nn.Module):
         u2 = self.up2(u1, d2)
         u3 = self.up3(u2, d1)
 
-        u3_g = self.lffb(u3)
-
-        return self.final(u3_g)
+        return self.final(u3)
 
 
 class GeneratorUNet_2048(nn.Module):
@@ -321,6 +322,9 @@ class GeneratorUNet_2048(nn.Module):
         self.up4 = UNetUp(256, 64)
         # self.us =   nn.Upsample(scale_factor=2)
 
+        self.msrb = MSRB(64)
+        self.lffb = LFFB(64)
+
         self.final = nn.Sequential(
             # nn.Conv3d(128, out_channels, 4, padding=1),
             # nn.Tanh(),
@@ -332,7 +336,10 @@ class GeneratorUNet_2048(nn.Module):
         # U-Net generator with skip connections from encoder to decoder
         d1 = self.down1(x)
         # print(d1.shape)
-        d2 = self.down2(d1)
+        d1_l = self.lffb(d1)
+        # print(d1_l.shape)
+        d2 = self.down2(d1_l)
+        # d2 = self.down2(d1)
         # print(d2.shape)
         d3 = self.down3(d2)
         # print(d3.shape)
@@ -346,6 +353,7 @@ class GeneratorUNet_2048(nn.Module):
         # print(m2.shape)
         m3 = self.mid3(m2, m2)
         # print(m3.shape)
+        '''
         m3_1 = self.mid3_1(m3, m3)
         # print(m3_1.shape)
         m3_2 = self.mid3_2(m3_1, m3_1)
@@ -353,8 +361,10 @@ class GeneratorUNet_2048(nn.Module):
         m3_3 = self.mid3_3(m3_2, m3_2)
         # print(m3_3.shape)
         m3_4 = self.mid3_4(m3_3, m3_3)
+        '''
         # print(m3_4.shape)
-        m4 = self.mid4(m3_4, m3_4)
+        # m4 = self.mid4(m3_4, m3_4)
+        m4 = self.mid4(m3, m3)
         # print(m4.shape)
         u1 = self.up1(m4, d4)
         # print(u1.shape)

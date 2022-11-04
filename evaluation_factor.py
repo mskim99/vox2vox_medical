@@ -3,7 +3,9 @@ import torch
 from IQA_pytorch import SSIM
 import sklearn.metrics as skl_metrics
 import skimage.metrics as ski_metrics
-from sewar.full_ref import psnr, uqi, ssim, ergas, scc, rase, sam, msssim, vifp
+# from skimage.metrics import structural_similarity as ssim
+from sewar.full_ref import psnr, ssim, uqi, ergas, scc, rase, sam, msssim, vifp
+import piq
 import numpy as np
 
 def loss_gtv(gv, gtv, thres, mv, b=1):
@@ -114,14 +116,147 @@ def msssim_volume(gv, gtv, normalize=True):
 
     loss_total = 0
     for i in range (0, gv.shape[2]):
-        gv_part = (gv[0, 0, :, :, i] * 255.).astype(int)
-        gtv_part = (gtv[0, 0, :, :, i] * 255.).astype(int)
-        loss_part = msssim(gv_part, gtv_part)
+        gv_part = (gv[:, :, :, :, i])
+        gtv_part = (gtv[:, :, :, :, i])
+        gv_part = torch.clamp(gv_part, min=0.0, max=1.0)
+        gtv_part = torch.clamp(gtv_part, min=0.0, max=1.0)
+        loss_part = piq.multi_scale_ssim(gv_part, gtv_part, kernel_size=7)
         loss_total += loss_part
 
     if normalize:
         loss_total = loss_total / gv.shape[2]
-    loss_total = loss_total.real
+
+    return loss_total
+
+
+def iwssim_volume(gv, gtv, normalize=True):
+
+    loss_total = 0
+    for i in range (0, gv.shape[2]):
+        gv_part = (gv[:, :, :, :, i])
+        gtv_part = (gtv[:, :, :, :, i])
+        gv_part = torch.clamp(gv_part, min=0.0, max=1.0)
+        gtv_part = torch.clamp(gtv_part, min=0.0, max=1.0)
+        loss_part = piq.information_weighted_ssim(gv_part, gtv_part, kernel_size=7)
+        loss_total += loss_part
+
+    if normalize:
+        loss_total = loss_total / gv.shape[2]
+
+    return loss_total
+
+
+def gmsd_volume(gv, gtv, normalize=True):
+
+    loss_total = 0
+    for i in range (0, gv.shape[2]):
+        gv_part = (gv[:, :, :, :, i])
+        gtv_part = (gtv[:, :, :, :, i])
+        gv_part = torch.clamp(gv_part, min=0.0, max=1.0)
+        gtv_part = torch.clamp(gtv_part, min=0.0, max=1.0)
+        loss_part = piq.gmsd(gv_part, gtv_part)
+        loss_total += loss_part
+
+    if normalize:
+        loss_total = loss_total / gv.shape[2]
+
+    return loss_total
+
+
+def ms_gmsd_volume(gv, gtv, normalize=True):
+
+    loss_total = 0
+    for i in range (0, gv.shape[2]):
+        gv_part = (gv[:, :, :, :, i])
+        gtv_part = (gtv[:, :, :, :, i])
+        gv_part = torch.clamp(gv_part, min=0.0, max=1.0)
+        gtv_part = torch.clamp(gtv_part, min=0.0, max=1.0)
+        loss_part = piq.multi_scale_gmsd(gv_part, gtv_part)
+        loss_total += loss_part
+
+    if normalize:
+        loss_total = loss_total / gv.shape[2]
+
+    return loss_total
+
+
+def vsi_volume(gv, gtv, normalize=True):
+
+    loss_total = 0
+    for i in range (0, gv.shape[2]):
+        gv_part = (gv[:, :, :, :, i])
+        gtv_part = (gtv[:, :, :, :, i])
+        gv_part = torch.clamp(gv_part, min=0.0, max=1.0)
+        gtv_part = torch.clamp(gtv_part, min=0.0, max=1.0)
+        loss_part = piq.vsi(gv_part, gtv_part)
+        loss_total += loss_part
+
+    if normalize:
+        loss_total = loss_total / gv.shape[2]
+
+    return loss_total
+
+
+def haarpsi_volume(gv, gtv, normalize=True):
+
+    loss_total = 0
+    for i in range (0, gv.shape[2]):
+        gv_part = (gv[:, :, :, :, i])
+        gtv_part = (gtv[:, :, :, :, i])
+        gv_part = torch.clamp(gv_part, min=0.0, max=1.0)
+        gtv_part = torch.clamp(gtv_part, min=0.0, max=1.0)
+        loss_part = piq.haarpsi(gv_part, gtv_part)
+        loss_total += loss_part
+
+    if normalize:
+        loss_total = loss_total / gv.shape[2]
+
+    return loss_total
+
+
+def mdsi_volume(gv, gtv, normalize=True):
+
+    loss_total = 0
+    for i in range (0, gv.shape[2]):
+        gv_part = (gv[:, :, :, :, i])
+        gtv_part = (gtv[:, :, :, :, i])
+        gv_part = torch.clamp(gv_part, min=0.0, max=1.0)
+        gtv_part = torch.clamp(gtv_part, min=0.0, max=1.0)
+        loss_part = piq.mdsi(gv_part, gtv_part)
+        loss_total += loss_part
+
+    if normalize:
+        loss_total = loss_total / gv.shape[2]
+
+    return loss_total
+
+
+def TV_volume(gv, normalize=True):
+
+    loss_total = 0
+    for i in range (0, gv.shape[2]):
+        gv_part = (gv[:, :, :, :, i])
+        gv_part = torch.clamp(gv_part, min=0.0, max=1.0)
+        loss_part = piq.total_variation(gv_part)
+        loss_total += loss_part
+
+    if normalize:
+        loss_total = loss_total / gv.shape[2]
+
+    return loss_total
+
+def brisque_volume(gv, normalize=True):
+
+    loss_total = 0
+    for i in range (0, gv.shape[2]):
+        gv_part = (gv[:, :, :, :, i])
+        gv_part = torch.clamp(gv_part, min=0.0, max=1.0)
+        loss_part = piq.brisque(gv_part)
+        loss_total += loss_part
+
+    if normalize:
+        loss_total = loss_total / gv.shape[2]
+
     return loss_total
 
 

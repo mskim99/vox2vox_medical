@@ -8,7 +8,7 @@ import datetime
 import sys
 
 import torch
-import torchvision.transforms as transforms
+# import torchvision.transforms as transforms
 from torchvision.utils import save_image
 
 from torch.utils.data import DataLoader
@@ -57,8 +57,8 @@ def train():
     opt = parser.parse_args()
     print(opt)
 
-    os.makedirs("images2/%s" % opt.dataset_name, exist_ok=True)
-    os.makedirs("saved_models2/%s" % opt.dataset_name, exist_ok=True)
+    os.makedirs("images4/%s" % opt.dataset_name, exist_ok=True)
+    os.makedirs("saved_models4/%s" % opt.dataset_name, exist_ok=True)
 
     cuda = True if torch.cuda.is_available() else False
 
@@ -85,8 +85,8 @@ def train():
 
     if opt.epoch != 0:
         # Load pretrained models
-        generator.load_state_dict(torch.load("saved_models2/%s/generator_%d.pth" % (opt.dataset_name, opt.epoch)))
-        discriminator.load_state_dict(torch.load("saved_models2/%s/discriminator_%d.pth" % (opt.dataset_name, opt.epoch)))
+        generator.load_state_dict(torch.load("saved_models4/%s/generator_%d.pth" % (opt.dataset_name, opt.epoch)))
+        discriminator.load_state_dict(torch.load("saved_models4/%s/discriminator_%d.pth" % (opt.dataset_name, opt.epoch)))
     else:
         # Initialize weights
         generator.apply(weights_init_normal)
@@ -107,25 +107,25 @@ def train():
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
         transforms.RandomFlip(),
         transforms.RandomPermuteRGB(),
-        transforms.ToTensor(),
+        # transforms.ToTensor(),
     ])
     val_transforms = transforms.Compose([
         transforms.CenterCrop([128, 128], [128, 128]),
         transforms.RandomBackground([[225, 255], [225, 255], [225, 255]]),
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-        transforms.ToTensor(),
+        # transforms.ToTensor(),
     ])
     '''
 
     dataloader = DataLoader(
-        CTDataset("./data/orig/train/", None),
+        CTDataset("./data/lol2_rm_0_25/train/", None),
         batch_size=opt.batch_size,
         shuffle=True,
         num_workers=opt.n_cpu,
     )
 
     val_dataloader = DataLoader(
-        CTDataset("./data/orig/test/", None),
+        CTDataset("./data/lol2_rm_0_25/test/", None),
         batch_size=1,
         shuffle=True,
         num_workers=1,
@@ -191,7 +191,7 @@ def train():
                 real_B = real_B.cpu().detach().numpy()
                 fake_B = fake_B.cpu().detach().numpy()
 
-                image_folder = "images2/%s/epoch_%s_" % (opt.dataset_name, epoch)
+                image_folder = "images4/%s/epoch_%s_" % (opt.dataset_name, epoch)
 
                 # np.save(image_folder + 'real_A_' + str(j).zfill(2) + '.npy', real_A)
                 np.save(image_folder + 'real_B_' + str(j).zfill(2) + '.npy', real_B)
@@ -290,8 +290,9 @@ def train():
             loss_dice = 1. - dice_score
 
             # Total loss
-            loss_G = loss_GAN + 33. * loss_L1 + 33. * iou_loss + 33. * loss_uqi
-            # loss_G = loss_GAN + 33. * loss_L1 + 33. * iou_loss
+            # loss_G = loss_GAN + 100. * loss_voxel
+            # loss_G = loss_GAN + 33. * loss_L1 + 33. * iou_loss + 43. * loss_uqi
+            loss_G = loss_GAN + 53. * loss_L1 + 33. * iou_loss + 33. * loss_uqi
             # + 100. * loss_L1
 
             loss_G.backward()
@@ -334,8 +335,8 @@ def train():
 
         if opt.checkpoint_interval != -1 and epoch % opt.checkpoint_interval == 0:
             # Save model checkpoints
-            torch.save(generator.state_dict(), "saved_models2/%s/generator_%d.pth" % (opt.dataset_name, epoch))
-            torch.save(discriminator.state_dict(), "saved_models2/%s/discriminator_%d.pth" % (opt.dataset_name, epoch))
+            torch.save(generator.state_dict(), "saved_models4/%s/generator_%d.pth" % (opt.dataset_name, epoch))
+            torch.save(discriminator.state_dict(), "saved_models4/%s/discriminator_%d.pth" % (opt.dataset_name, epoch))
 
         print(' *****training processed*****')
 
@@ -352,5 +353,5 @@ if __name__ == '__main__':
 
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = '2'
+    os.environ["CUDA_VISIBLE_DEVICES"] = '1'
     train()

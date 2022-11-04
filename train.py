@@ -55,8 +55,8 @@ def train():
     opt = parser.parse_args()
     print(opt)
 
-    os.makedirs("images3/%s" % opt.dataset_name, exist_ok=True)
-    os.makedirs("saved_models3/%s" % opt.dataset_name, exist_ok=True)
+    os.makedirs("images/%s" % opt.dataset_name, exist_ok=True)
+    os.makedirs("saved_models/%s" % opt.dataset_name, exist_ok=True)
 
     cuda = True if torch.cuda.is_available() else False
 
@@ -82,8 +82,8 @@ def train():
 
     if opt.epoch != 0:
         # Load pretrained models
-        generator.load_state_dict(torch.load("saved_models3/%s/generator_%d.pth" % (opt.dataset_name, opt.epoch)))
-        discriminator.load_state_dict(torch.load("saved_models3/%s/discriminator_%d.pth" % (opt.dataset_name, opt.epoch)))
+        generator.load_state_dict(torch.load("saved_models/%s/generator_%d.pth" % (opt.dataset_name, opt.epoch)))
+        discriminator.load_state_dict(torch.load("saved_models/%s/discriminator_%d.pth" % (opt.dataset_name, opt.epoch)))
     else:
         # Initialize weights
         generator.apply(weights_init_normal)
@@ -148,7 +148,7 @@ def train():
             real_B = real_B.cpu().detach().numpy()
             fake_B = fake_B.cpu().detach().numpy()
 
-            image_folder = "images3/%s/epoch_%s_" % (opt.dataset_name, epoch)
+            image_folder = "images/%s/epoch_%s_" % (opt.dataset_name, epoch)
 
 
             # Print log
@@ -268,8 +268,8 @@ def train():
 
         if opt.checkpoint_interval != -1 and epoch % opt.checkpoint_interval == 0:
             # Save model checkpoints
-            torch.save(generator.state_dict(), "saved_models3/%s/generator_%d.pth" % (opt.dataset_name, epoch))
-            torch.save(discriminator.state_dict(), "saved_models3/%s/discriminator_%d.pth" % (opt.dataset_name, epoch))
+            torch.save(generator.state_dict(), "saved_models/%s/generator_%d.pth" % (opt.dataset_name, epoch))
+            torch.save(discriminator.state_dict(), "saved_models/%s/discriminator_%d.pth" % (opt.dataset_name, epoch))
 
     print('*****training processed*****')
 
@@ -277,5 +277,5 @@ if __name__ == '__main__':
 
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = '2'
+    os.environ["CUDA_VISIBLE_DEVICES"] = '0'
     train()

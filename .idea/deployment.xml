@@ -16,7 +16,7 @@
           </mappings>
         </serverdata>
       </paths>
-      <paths name="jionkim@165.246.42.44:22 p2pp">
+      <paths name="jionkim@165.246.42.44:22 pix2orig">
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />
@@ -44,14 +44,14 @@
           </mappings>
         </serverdata>
       </paths>
-      <paths name="jionkim@165.246.44.83:22 mesh">
+      <paths name="jionkim@165.246.44.83:22 password">
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
-      <paths name="jionkim@165.246.44.83:22 password">
+      <paths name="jionkim@165.246.44.83:22 pix2vox">
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />
